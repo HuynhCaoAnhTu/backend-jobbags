@@ -19,142 +19,27 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
   }
 });
 
-// Khởi tạo bảng và dữ liệu mẫu
+// Khởi tạo bảng (không seed dữ liệu)
 function initDb() {
-  db.serialize(() => {
-    // Tạo bảng trước, đợi callback để đảm bảo bảng đã được tạo xong
-    db.run(`CREATE TABLE IF NOT EXISTS mentors (
-      id TEXT PRIMARY KEY,
-      name TEXT,
-      role TEXT,
-      company TEXT,
-      imageUrl TEXT,
-      bio TEXT,
-      topics TEXT,
-      isVisible INTEGER,
-      featured INTEGER,
-      price TEXT,
-      experience TEXT,
-      reviews INTEGER
-    )`, (err) => {
-      if (err) {
-        console.error('Error creating table:', err.message);
-        return;
-      }
-      
-      // Chỉ kiểm tra và seed data sau khi bảng đã được tạo xong
-      db.get("SELECT count(*) as count FROM mentors", (err, row) => {
-        if (err) {
-          console.error('Error checking mentors count:', err.message);
-          return;
-        }
-        
-        // Chỉ seed data nếu database hoàn toàn trống (chưa có dữ liệu)
-        if (row && row.count === 0) {
-          console.log("Database is empty. Seeding initial data...");
-          const initialMentors = [
-          {
-            id: '1',
-            name: 'Nguyễn Văn An',
-            role: 'Senior Product Manager',
-            company: 'Momo',
-            imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-            bio: '7 năm kinh nghiệm làm Product tại các công ty Fintech hàng đầu. Chuyên gia về Product Strategy và Growth.',
-            topics: JSON.stringify(['Product Management', 'Strategy', 'Fintech', 'Startup']),
-            isVisible: 1,
-            featured: 1,
-            price: '500.000đ',
-            experience: '7 năm',
-            reviews: 124
-          },
-          {
-            id: '2',
-            name: 'Trần Thị Bích',
-            role: 'Head of Marketing',
-            company: 'VinGroup',
-            imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-            bio: 'Dẫn dắt đội ngũ Marketing 50+ người. Có kinh nghiệm sâu sắc về Branding và Digital Marketing cho các tập đoàn lớn.',
-            topics: JSON.stringify(['Marketing', 'Branding', 'Leadership']),
-            isVisible: 1,
-            featured: 0,
-            price: 'Miễn phí',
-            experience: '10 năm',
-            reviews: 89
-          },
-          {
-            id: '3',
-            name: 'Lê Hoàng Nam',
-            role: 'Senior Software Engineer',
-            company: 'Grab',
-            imageUrl: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-            bio: 'Chuyên về Backend và System Design. Từng làm việc tại Singapore. Sẵn sàng chia sẻ về quy trình phỏng vấn Big Tech.',
-            topics: JSON.stringify(['Software Engineering', 'System Design', 'Backend', 'Career Growth']),
-            isVisible: 1,
-            featured: 1,
-            price: '200.000đ',
-            experience: '5 năm',
-            reviews: 45
-          },
-          {
-            id: '4',
-            name: 'Phạm Minh Tú',
-            role: 'UX/UI Design Lead',
-            company: 'Zalo',
-            imageUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-            bio: 'Đam mê tạo ra trải nghiệm người dùng tuyệt vời. Mentor về tư duy thiết kế và xây dựng Portfolio.',
-            topics: JSON.stringify(['UX/UI Design', 'Figma', 'Portfolio Review']),
-            isVisible: 1,
-            featured: 0,
-            price: '300.000đ',
-            experience: '6 năm',
-            reviews: 67
-          },
-          {
-            id: '5',
-            name: 'Đặng Thảo Chi',
-            role: 'Data Scientist',
-            company: 'Shopee',
-            imageUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-            bio: 'Kinh nghiệm xây dựng các mô hình Recommendation System. Thạc sĩ Khoa học Dữ liệu tại Pháp.',
-            topics: JSON.stringify(['Data Science', 'Machine Learning', 'Python', 'AI']),
-            isVisible: 1,
-            featured: 0,
-            price: '400.000đ',
-            experience: '4 năm',
-            reviews: 32
-          },
-          {
-            id: '6',
-            name: 'Vũ Quốc Hưng',
-            role: 'Investment Manager',
-            company: 'Mekong Capital',
-            imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-            bio: 'Hỗ trợ các startup gọi vốn và xây dựng mô hình tài chính. Tư vấn đầu tư cá nhân.',
-            topics: JSON.stringify(['Investment', 'Finance', 'Startup Fundraising']),
-            isVisible: 1,
-            featured: 1,
-            price: '1.000.000đ',
-            experience: '12 năm',
-            reviews: 156
-          }
-        ];
-
-          const stmt = db.prepare(`INSERT INTO mentors (id, name, role, company, imageUrl, bio, topics, isVisible, featured, price, experience, reviews) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-          initialMentors.forEach(m => {
-            stmt.run(m.id, m.name, m.role, m.company, m.imageUrl, m.bio, m.topics, m.isVisible, m.featured, m.price, m.experience, m.reviews);
-          });
-          stmt.finalize((err) => {
-            if (err) {
-              console.error('Error finalizing statement:', err.message);
-            } else {
-              console.log(`Successfully seeded ${initialMentors.length} mentors.`);
-            }
-          });
-        } else {
-          console.log(`Database already has ${row.count} mentor(s). Skipping seed.`);
-        }
-      });
-    });
+  db.run(`CREATE TABLE IF NOT EXISTS mentors (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    role TEXT,
+    company TEXT,
+    imageUrl TEXT,
+    bio TEXT,
+    topics TEXT,
+    isVisible INTEGER,
+    featured INTEGER,
+    price TEXT,
+    experience TEXT,
+    reviews INTEGER
+  )`, (err) => {
+    if (err) {
+      console.error('Error creating table:', err.message);
+    } else {
+      console.log('Mentors table ready.');
+    }
   });
 }
 
