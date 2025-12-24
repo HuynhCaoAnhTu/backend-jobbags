@@ -22,6 +22,7 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
 // Khởi tạo bảng và dữ liệu mẫu
 function initDb() {
   db.serialize(() => {
+    // Tạo bảng trước, đợi callback để đảm bảo bảng đã được tạo xong
     db.run(`CREATE TABLE IF NOT EXISTS mentors (
       id TEXT PRIMARY KEY,
       name TEXT,
@@ -35,13 +36,23 @@ function initDb() {
       price TEXT,
       experience TEXT,
       reviews INTEGER
-    )`);
-
-    // Kiểm tra xem có dữ liệu chưa, nếu chưa thì seed data
-    db.get("SELECT count(*) as count FROM mentors", (err, row) => {
-      if (row.count === 0) {
-        console.log("Seeding initial data...");
-        const initialMentors = [
+    )`, (err) => {
+      if (err) {
+        console.error('Error creating table:', err.message);
+        return;
+      }
+      
+      // Chỉ kiểm tra và seed data sau khi bảng đã được tạo xong
+      db.get("SELECT count(*) as count FROM mentors", (err, row) => {
+        if (err) {
+          console.error('Error checking mentors count:', err.message);
+          return;
+        }
+        
+        // Chỉ seed data nếu database hoàn toàn trống (chưa có dữ liệu)
+        if (row && row.count === 0) {
+          console.log("Database is empty. Seeding initial data...");
+          const initialMentors = [
           {
             id: '1',
             name: 'Nguyễn Văn An',
@@ -128,12 +139,21 @@ function initDb() {
           }
         ];
 
-        const stmt = db.prepare(`INSERT INTO mentors (id, name, role, company, imageUrl, bio, topics, isVisible, featured, price, experience, reviews) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-        initialMentors.forEach(m => {
-          stmt.run(m.id, m.name, m.role, m.company, m.imageUrl, m.bio, m.topics, m.isVisible, m.featured, m.price, m.experience, m.reviews);
-        });
-        stmt.finalize();
-      }
+          const stmt = db.prepare(`INSERT INTO mentors (id, name, role, company, imageUrl, bio, topics, isVisible, featured, price, experience, reviews) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+          initialMentors.forEach(m => {
+            stmt.run(m.id, m.name, m.role, m.company, m.imageUrl, m.bio, m.topics, m.isVisible, m.featured, m.price, m.experience, m.reviews);
+          });
+          stmt.finalize((err) => {
+            if (err) {
+              console.error('Error finalizing statement:', err.message);
+            } else {
+              console.log(`Successfully seeded ${initialMentors.length} mentors.`);
+            }
+          });
+        } else {
+          console.log(`Database already has ${row.count} mentor(s). Skipping seed.`);
+        }
+      });
     });
   });
 }
